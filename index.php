@@ -1960,7 +1960,7 @@ function adminRender(){
   el('astarted').textContent = A_state.startedAtMs ? new Date(A_state.startedAtMs).toLocaleString() : '-';
   const seen = A_state.stage?.lastSeen ? Number(A_state.stage.lastSeen)*1000 : 0;
   const serverNow = Date.now() + CLOCK_DRIFT_MS;
-  const online = seen && (serverNow - seen < 6000);
+  const online = seen && (serverNow - seen < 15000);
   const aonline = el('aonline');
   aonline.textContent = online ? t('online') : t('offline');
   aonline.classList.toggle('bad', !online);
@@ -2428,7 +2428,7 @@ function mTimerStatus(st){
 function mOnline(st){
     const seen = Number(st?.stage?.lastSeen||0)*1000;
     const now  = Date.now() + CLOCK_DRIFT_MS;
-    const on   = seen && (now - seen < 6000);
+    const on   = seen && (now - seen < 15000);
     return { on, html: `<span class="badge ${on?'b-on':'b-off'}">${on ? t('online') : t('offline')}</span>` };
 }
 function multiRenderRows(){
