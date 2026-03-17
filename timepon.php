@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 /* =========================================================
  * カンファレンスタイマー 「TIME-PON」
- * バージョン 1.0.1
+ * バージョン 1.0.2
  * 
   * 【概要】
  * 1) カンファレンスやプレゼンテーションなどの場で、遠隔操作で講演者に残り時間を表示したり、カンペを出すための Web アプリケーションです。  
@@ -110,44 +110,8 @@ function gen_unique_id($len=6, $maxTry=50){
 }
 function redact_state($st){ if (is_array($st)) { unset($st['adminKey']); } return $st; }
 function gen_admin_key(): string { return bin2hex(random_bytes(16)); }
-function load_state($id){
-    $file = id_to_file($id);
-    if (!file_exists($file)) {
-        return [
-            'id'=>$id,
-            'state'=>'idle',
-            'durationSec'=>2400,
-            'warn1Min'=>10,
-            'warn2Min'=>5,
-            'startedAtMs'=>0,
-            'pausedAccumMs'=>0,
-            'pausedAtMs'=>0,
-            'message'=>'',
-            'messageAtMs'=>0,
-            'autoPrompt'=>true,
-            'promptOnly'=>false,
-            'stage'=>['lastSeen'=>0,'fullscreen'=>false,'startedAckMs'=>0,'msgAckMs'=>0],
-            'colors'=>['n'=>'#1e293b','w1'=>'#facc15','w2'=>'#ef4444'],
-            'lang'=>'ja',
-            'flash'=>false,
-            'adminKey'=>null,
-            'updatedAt'=>time()
-        ];
-    }
-    $j = @file_get_contents($file);
-    $d = @json_decode($j, true);
-    if (!is_array($d)) $d = [];
-    if (!isset($d['warn1Min']) && isset($d['warnSec'])) $d['warn1Min'] = max(0, intval($d['warnSec']/60));
-    if (!isset($d['warn2Min'])) $d['warn2Min'] = 5;
-    if (!isset($d['colors']) || !is_array($d['colors'])) {
-        $d['colors'] = ['n'=>'#1e293b','w1'=>'#facc15','w2'=>'#ef4444'];
-    } else {
-        $d['colors']['n']  = $d['colors']['n']  ?? '#1e293b';
-        $d['colors']['w1'] = $d['colors']['w1'] ?? '#facc15';
-        $d['colors']['w2'] = $d['colors']['w2'] ?? '#ef4444';
-    }
-    $d['lang'] = in_array(($d['lang'] ?? 'ja'), ['ja','en'], true) ? $d['lang'] : 'ja';
-    return array_merge([
+function default_state($id){
+    return [
         'id'=>$id,
         'state'=>'idle',
         'durationSec'=>2400,
@@ -166,15 +130,73 @@ function load_state($id){
         'flash'=>false,
         'adminKey'=>null,
         'updatedAt'=>time()
-    ], $d);
+    ];
+}
+function normalize_state($id, $d){
+    if (!is_array($d)) $d = [];
+    if (!isset($d['warn1Min']) && isset($d['warnSec'])) $d['warn1Min'] = max(0, intval($d['warnSec']/60));
+    if (!isset($d['warn2Min'])) $d['warn2Min'] = 5;
+    if (!isset($d['colors']) || !is_array($d['colors'])) {
+        $d['colors'] = ['n'=>'#1e293b','w1'=>'#facc15','w2'=>'#ef4444'];
+    } else {
+        $d['colors']['n']  = $d['colors']['n']  ?? '#1e293b';
+        $d['colors']['w1'] = $d['colors']['w1'] ?? '#facc15';
+        $d['colors']['w2'] = $d['colors']['w2'] ?? '#ef4444';
+    }
+    if (!isset($d['stage']) || !is_array($d['stage'])) {
+        $d['stage'] = [];
+    }
+    $d['stage']['lastSeen']     = (int)($d['stage']['lastSeen'] ?? 0);
+    $d['stage']['fullscreen']   = !empty($d['stage']['fullscreen']);
+    $d['stage']['startedAckMs'] = (int)($d['stage']['startedAckMs'] ?? 0);
+    $d['stage']['msgAckMs']     = (int)($d['stage']['msgAckMs'] ?? 0);
+    $d['lang'] = in_array(($d['lang'] ?? 'ja'), ['ja','en'], true) ? $d['lang'] : 'ja';
+    return array_merge(default_state($id), $d);
+}
+function read_state_file($file){
+    if (!file_exists($file)) return null;
+    $fp = @fopen($file, 'rb');
+    if (!$fp) return null;
+    $json = null;
+    if (@flock($fp, LOCK_SH)) {
+        $json = @stream_get_contents($fp);
+        @flock($fp, LOCK_UN);
+    }
+    @fclose($fp);
+    if (!is_string($json) || $json === '') return null;
+    $d = @json_decode($json, true);
+    return is_array($d) ? $d : null;
+}
+function load_state($id){
+    $file = id_to_file($id);
+    $d = read_state_file($file);
+    if (is_array($d)) {
+        return normalize_state($id, $d);
+    }
+    $bak = $file . '.bak';
+    $dBak = read_state_file($bak);
+    if (is_array($dBak)) {
+        return normalize_state($id, $dBak);
+    }
+    if (!file_exists($file)) {
+        return default_state($id);
+    }
+    return default_state($id);
 }
 function save_state(string $id, array $st): bool {
     $file = id_to_file($id);
     $dir  = dirname($file);
     if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
+
+    $current = read_state_file($file);
+    if (is_array($current) && !empty($current['adminKey']) && empty($st['adminKey'])) {
+        $st['adminKey'] = $current['adminKey'];
+    }
+
     $st['updatedAt'] = time();
     $json = json_encode($st, JSON_UNESCAPED_UNICODE);
     if ($json === false) return false;
+
     $tmp = $file . '.tmp';
     $ok = false;
     $fp = @fopen($tmp, 'wb');
@@ -188,6 +210,12 @@ function save_state(string $id, array $st): bool {
         @fclose($fp);
     }
     if (!$ok) { @unlink($tmp); return false; }
+
+    if (file_exists($file)) {
+        @copy($file, $file . '.bak');
+        @chmod($file . '.bak', 0660);
+    }
+
     if (!@rename($tmp, $file)) { @unlink($tmp); return false; }
     @chmod($file, 0660);
     return true;
@@ -459,9 +487,25 @@ if ($act === 'hb' && $_SERVER['REQUEST_METHOD']==='POST') {
     if ($id === '') json_out(['ok'=>false,'error'=>'id required']);
     $st = load_state($id);
     $fs = isset($_POST['fs']) && (($_POST['fs']=='1'||strtolower($_POST['fs'])==='true'));
-    $st['stage']['lastSeen']   = time();
+    $nowSec = time();
+
+    $prevLastSeen = (int)($st['stage']['lastSeen'] ?? 0);
+    $prevFs = !empty($st['stage']['fullscreen']);
+
+    $st['stage']['lastSeen']   = $nowSec;
     $st['stage']['fullscreen'] = $fs;
-    save_state($id, $st);
+
+    $needSave = false;
+    if ($prevFs !== $fs) {
+        $needSave = true;
+    } elseif (($nowSec - $prevLastSeen) >= 10) {
+        $needSave = true;
+    }
+
+    if ($needSave) {
+        save_state($id, $st);
+    }
+
     json_out(['ok'=>true, 'state'=>redact_state($st), 'serverNowMs'=>(int)(microtime(true)*1000)]);
 }
 ?>
@@ -1214,7 +1258,23 @@ select:focus{
       <button id="toStage" data-i18n="stage">演台</button>
       <button id="toMulti" data-i18n="multiRooms">複数ルーム管理</button>
     </div>
-
+    <div class="card muted" style="margin-top:8px">
+      <strong data-i18n="homeNoticeTitle">このシステムはサンプル版（2025年9月6日現在）です。</strong>
+      <p data-i18n="homeNoticeP1">
+        このサンプルは機能や使い勝手に関するご意見をいただくためにこのサイトで一時的に利用できるようにしているものです。
+        恒久的なWebサービスとしての提供をするものではありません。
+      </p>
+      <ul>
+        <li data-i18n="homeNoticeLi1">予告なく仕様の変更やサービス停止、ルームの削除などを行う場合があります。（しかも頻繁に）</li>
+        <li data-i18n="homeNoticeLi2">そのため、現時点ではイベント本番などでのご利用はお控えください</li>
+        <li>
+          <span data-i18n="homeNoticeLi3a">使い勝手、バグ報告、ご要望をぜひ</span>
+          <a href="https://x.com/vtrpon2" target="_blank" rel="noopener noreferrer" data-i18n="authorLink">作者</a>
+          <span data-i18n="homeNoticeLi3b">までお寄せください。</span>
+        </li>
+      </ul>
+      <p data-i18n="homeNoticeP2">以上のことに同意いただける場合だけ、お使いください</p>
+    </div>
   </div>
 </div>
 <div class="container hidden" id="admin">
