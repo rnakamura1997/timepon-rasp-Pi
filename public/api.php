@@ -93,5 +93,5 @@ if($action==='settings'){
 if($action==='chime_list'){ send_json(['ok'=>true,'files'=>Upload::list()]); }
 if($action==='chime_config'){ $st=TimerState::load($room); send_json(['ok'=>true,'chimes'=>$st['chimes']]); }
 if($action==='chime_upload'){ require_post(); [$ok,$msg]=Upload::save($_FILES['audio']??[]); send_json(['ok'=>$ok,'msg'=>$msg],$ok?200:400); }
-if($action==='chime_delete'){ require_post(); $f=basename((string)($_POST['file']??'')); if(!preg_match('/^[A-Za-z0-9._-]+\.(mp3|wav)$/i',$f)) send_json(['ok'=>false],400); @unlink(cfg()['storage_dir'].'/chimes/'.$f); send_json(['ok'=>true]); }
+if($action==='chime_delete'){ require_post(); $f=basename((string)($_POST['file']??'')); if(!preg_match('/^[A-Za-z0-9._-]+\.(mp3|wav)$/i',$f)) send_json(['ok'=>false],400); @unlink(Upload::dir().'/'.$f); send_json(['ok'=>true]); }
 send_json(['ok'=>false,'error'=>'unknown_action'],404);

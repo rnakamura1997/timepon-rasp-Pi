@@ -118,3 +118,61 @@ SOFTWARE.
 - ブラウザの自動再生制限により、無操作状態の初回チャイム再生がブロックされることがある。
 - 端末スリープ／省電力時は heartbeat が遅延し、監視画面で一時的に offline 判定になることがある。
 - 音源が存在しない設定は安全側（該当チャイム無効化＋既定候補へフォールバック）に丸める。
+
+---
+
+## Phase 4: Raspberry Pi ローカル運用仕上げ
+
+### 追加したCLI/TUI（LCD向け）
+- `scripts/timepon_cli_tui.py` は `api.php?act=cli_snapshot` を定期取得して、Pi の小型LCD向けに以下を表示します。  
+  - AP接続情報（`--base-url` とAPI先）
+  - 管理画面URL
+  - 演台画面URL
+  - 固定ルーム一覧
+  - 現在状態（idle/running/paused）
+  - 残り時間（`HH:MM:SS`）
+  - stage 接続状態（online/stale/offline）
+- GUIやChromiumを前提にせず、SSHコンソールでも同じ情報が確認できます。
+
+実行例:
+```bash
+python3 scripts/timepon_cli_tui.py --base-url http://127.0.0.1
+python3 scripts/timepon_cli_tui.py --base-url http://192.168.50.1 --interval 2 --offline-sec 10
+```
+
+### Raspberry Pi セットアップスクリプト
+- `scripts/setup_pi.sh` を追加。以下を一括実施します。
+  1. `php`, `lighttpd` など最低限パッケージ導入
+  2. 配置先 (`/opt/timepon`) と公開パス (`/var/www/timepon`) 準備
+  3. リポジトリ内容を配置先へ同期
+  4. `var/data`, `var/chimes`, `var/log` を作成し権限設定
+  5. `app/config/config.local.php` の初期配置
+- `config.local.php` がある場合は、`storage_dir` や `chime_dir` を環境別に上書きできます。
+
+実行例:
+```bash
+chmod +x scripts/setup_pi.sh
+./scripts/setup_pi.sh
+```
+
+### 実機運用向けの調整方針
+- Web UI は既存導線を維持し、運用監視は CLI/TUI に分離。
+- API は `cli_snapshot` だけを定期参照し、画面側の責務と重複しないように整理。
+- ポーリング間隔は既定2秒（必要に応じて調整）で、Pi 3B への負荷を抑制。
+- stage監視は `stageLastSeen` の差分判定のみとし、重い追加処理を導入しない。
+
+### AP経由の運用手順（再掲+補強）
+1. Pi をローカルAPとして起動し、オペレータ端末・演台端末を同一APへ接続。
+2. CLI/TUI で `admin.php?room=...` / `stage.php?room=...` のURLを確認。
+3. オペレータは管理画面、演台は演台画面を開く。
+4. 演台端末で「チャイム有効化」を押して音声再生を許可。
+5. 会場Wi-Fiは補助経路（バックアップ）として扱い、主経路はローカルAPを維持。
+
+### トラブル時の確認
+- CLI/TUIで `stage=offline/stale` の場合:
+  - 演台端末の画面スリープ解除
+  - AP再接続状態を確認
+  - `api.php?act=cli_snapshot` が取得可能か確認
+- チャイムが鳴らない場合:
+  - 演台端末で「チャイム有効化」を再実施
+  - 音量・ブラウザ自動再生制限・音源ファイル存在を確認
