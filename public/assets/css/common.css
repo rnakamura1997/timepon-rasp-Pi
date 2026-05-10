@@ -1,1 +1,13 @@
-body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;margin:0}.wrap{max-width:900px;margin:0 auto;padding:16px}a{color:#93c5fd}button,input{font-size:16px;padding:8px;margin:4px}#time{font-size:72px;font-weight:bold}
+:root{--n:#1e293b;--g:#facc15;--o:#ef4444;--r:#b91c1c;--fg:#fff}
+html,body{height:100%;margin:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,"Noto Sans JP",sans-serif}
+body{background:#0b1016;color:#e5e7eb}
+a{color:#93c5fd}
+.container{max-width:1200px;margin:24px auto;padding:0 16px}
+.card{border:1px solid #1f2937;border-radius:12px;padding:14px;margin-bottom:14px;background:#111827}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button,input{padding:10px 14px;font-size:16px}
+button{border:none;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer}
+button.secondary{background:#374151}
+button.danger{background:#b91c1c}
+.muted{opacity:.8;font-size:12px}
+.mono{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1;letter-spacing:.02em}
