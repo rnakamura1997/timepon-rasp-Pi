@@ -1,7 +1,7 @@
 <?php
 ini_set('display_errors', '0');
 date_default_timezone_set('Asia/Tokyo');
-function cfg(){ static $c=null; if($c===null){$c=require __DIR__.'/../config/config.php';} return $c; }
+function cfg(){ static $c=null; if($c===null){ $base=require __DIR__.'/../config/config.php'; $local=__DIR__.'/../config/config.local.php'; if(is_file($local)){ $ov=require $local; if(is_array($ov)) $base=array_replace($base,$ov); } $c=$base; } return $c; }
 function rooms_cfg(){ static $r=null; if($r===null){$r=require __DIR__.'/../config/rooms.php';} return $r; }
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function room_id_ok(string $id): bool { return preg_match('/^[A-Za-z0-9_-]{1,32}$/',$id)===1; }
