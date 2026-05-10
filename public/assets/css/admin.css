@@ -1,1 +1,12 @@
-.admin-body{background:#0f172a;color:#e2e8f0}.topbar{display:flex;justify-content:space-between;align-items:center}.pill{padding:6px 10px;border:1px solid #475569;border-radius:99px}.roomtabs{display:flex;gap:8px;margin:12px 0}.roomtabs a{padding:6px 10px;border:1px solid #334155;border-radius:6px;text-decoration:none}.roomtabs .active{background:#1d4ed8;color:#fff}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}.card{border:1px solid #334155;border-radius:10px;padding:10px;background:#111827}.row{display:flex;gap:6px;flex-wrap:wrap}.timer-card #time{font-size:72px;font-weight:700;letter-spacing:.05em}#monitor{width:100%;border-collapse:collapse}#monitor th,#monitor td{border-bottom:1px solid #334155;padding:6px;text-align:left}.chime-row{display:grid;grid-template-columns:1.5fr .8fr .8fr .8fr 1.2fr;gap:6px;margin:6px 0}
+.admin-body h1{margin:0 0 12px}
+.roomtabs{gap:8px}
+.roomtabs a{padding:6px 10px;border:1px solid #334155;border-radius:6px;text-decoration:none;background:#0f172a;color:#e5e7eb}
+.roomtabs .active{background:#1d4ed8;color:#fff}
+#adminGrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.big{font-size:clamp(56px,14vw,120px);font-weight:800;line-height:.9}
+.btnxl{font-size:22px;padding:16px 22px;border-radius:14px}
+#msg{width:520px;max-width:70vw}
+#monitor{width:100%;border-collapse:collapse}
+#monitor th,#monitor td{border-bottom:1px solid #334155;padding:6px;text-align:left}
+.chime-row{display:grid;grid-template-columns:1.5fr .8fr .8fr .8fr 1.2fr;gap:6px;margin:6px 0}
+@media (max-width:980px){#adminGrid{grid-template-columns:1fr}}
