@@ -89,3 +89,32 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+
+---
+
+## Phase 3: 実機運用メモ（Raspberry Pi 3B 想定）
+
+### ローカルAP経由の基本運用
+1. Raspberry Pi を会場内ローカルAP（オフライン可）として起動。
+2. オペレータ端末と演台端末を同一APに接続。
+3. まずオペレータ画面を開き、次に演台画面を開く。
+4. 演台側で一度「チャイム有効化」を押して、ブラウザの音声再生許可を得る。
+
+### URLの考え方（固定ルーム）
+- 管理画面: `/admin.php?room={roomId}`
+- 演台画面: `/stage.php?room={roomId}`
+- 代表的な固定ルームURL（互換）: `/admin/main`, `/stage/main`, `/admin/sub`, `/stage/sub`
+- ルームID一覧やURL素材は `api.php?act=room_meta&room={roomId}` と `api.php?act=cli_snapshot` で取得可能。
+
+### チャイム有効化ボタン
+- ブラウザの自動再生制限回避のため、演台端末のユーザー操作で有効化が必要。
+- 有効化前はチャイムが鳴らない場合がある（仕様）。
+
+### 会場Wi-Fiは補助経路
+- 本番はローカルAPを主経路とし、会場Wi-Fiは補助（障害時切替）を推奨。
+- 通信断があっても状態はサーバ側に保存されるため、再接続後に復帰可能。
+
+### 既知の制約
+- ブラウザの自動再生制限により、無操作状態の初回チャイム再生がブロックされることがある。
+- 端末スリープ／省電力時は heartbeat が遅延し、監視画面で一時的に offline 判定になることがある。
+- 音源が存在しない設定は安全側（該当チャイム無効化＋既定候補へフォールバック）に丸める。
