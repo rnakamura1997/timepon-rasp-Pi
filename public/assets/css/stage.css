@@ -1,1 +1,1 @@
-.stage{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center}#time{font-size:20vw}#msg{font-size:4vw}
+.stage{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#111827}.room{position:fixed;top:10px;left:12px;color:#94a3b8}#time{font-size:20vw;font-weight:700;line-height:1}#msg{font-size:3.2vw;margin-top:2vh;color:#f8fafc;max-width:90vw;text-align:center}body.warn1 .stage{background:#78350f}body.warn2 .stage{background:#7f1d1d}body.end .stage{background:#b91c1c}
