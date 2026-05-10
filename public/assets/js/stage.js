@@ -1,0 +1,4 @@
+const room=window.TIMEPON_ROOM; const t=document.getElementById('time'),m=document.getElementById('msg'); let st=null,off=0;
+async function poll(){ const j=await (await fetch(`api.php?act=get&room=${encodeURIComponent(room)}`)).json(); st=j.state; off=j.serverNowMs-Date.now(); m.textContent=st.message||''; }
+function rem(now){ if(!st||st.state==='idle') return st?st.durationSec*1000:0; const base=(st.state==='paused'?st.pausedAtMs:now+off)-st.startedAtMs-st.pausedAccumMs; return st.durationSec*1000-base; }
+function loop(){ if(st){ const sec=Math.floor(rem(Date.now())/1000); const s=Math.abs(sec)%60,mm=Math.floor(Math.abs(sec)/60); t.textContent=`${sec<0?'-':''}${String(mm).padStart(2,'0')}:${String(s).padStart(2,'0')}`;} requestAnimationFrame(loop);} setInterval(poll,1000); poll(); loop();
